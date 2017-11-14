@@ -13,7 +13,10 @@ import collections
 #              * optional and maybe more
 
 
-class ParseError(Exception): pass
+class ParseError(Exception):
+    def __init__(self, msg, at=0):
+        Exception.__init__(self, msg)
+        self.at = at
 
 
 def pull(input_str, pattern, pattern_table):
@@ -45,7 +48,7 @@ def throw_parse_error(original, pos, text):
             line += 1
             char = 0
     errmsg = "Parse error on line {} at column {}:\n{}".format(line, char, text)
-    raise ParseError(errmsg)
+    raise ParseError(errmsg, pos)
 
 
 def lex(input_str, token_types):
@@ -100,7 +103,7 @@ def parse_rulename(input_str, rulename, rules, tokens, at, token_types):
             except ParseError, e:
                 stored_error.append(e)
                 continue
-        throw_parse_error(input_str, tokens[at][2], "Failed to parse {}: {}".format(rulename, "\n".join((str(err) for err in stored_error))))
+        raise ParseError(str(max(stored_error, key=lambda x: x.at)), at=at)
     else:
         current_biggest = None
         full_rule = rules[rulename]
@@ -137,7 +140,7 @@ def consume_bare_rulesegment(input_str, rulesegment, tokens, at, rules, token_ty
             at += 1
         else:
             throw_parse_error(input_str, head[2],
-                              "Unexpected token: expected {} to parse a {}, got {}".format(rulesegment, rulesegment, head[0]))
+                              "Unexpected token: expected {}, got {}".format(rulesegment, head[0]))
     else:
         at, inst = parse_rulename(input_str, rulesegment, rules, tokens, tokens.index(head), token_types)
         result = inst
@@ -205,7 +208,7 @@ def parse(input_str, token_types, rules, start="root"):
     tokens.append(("EOF", "", tokens[-1][2]))
     at, treenode = parse_rulename(input_str, start, rules, tokens, 0, token_types)
     if at != len(tokens) - 1:
-        raise ParseError('''Parse error: got to end of token stream without parsing everything''')
+        throw_parse_error(input_str, at, '''Parse error: got to end of token stream without parsing everything''')
     return treenode
 
 

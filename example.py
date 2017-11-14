@@ -17,7 +17,7 @@ rules = collections.OrderedDict(
         ["LPAREN", "multi_poly", "RPAREN", ["OP", "LPAREN", "multi_poly", "RPAREN", "*"]]
     ],
     multi_poly=[
-        ["LPAREN", "polynomial", "RPAREN", "LPAREN", "polynomial", "RPAREN"],
+        ["LPAREN", "multi_poly", "RPAREN", "LPAREN", "multi_poly", "RPAREN"],
         ["NUM", "LPAREN", "polynomial", "RPAREN"],
         ["polynomial"]
     ],
@@ -31,7 +31,7 @@ rules = collections.OrderedDict(
         ["LETTER", ["POWER", "NUM", "?"]]
     ]
 )
-result = parseit.parse("(2(1a^2b - 2ab + 3)) - ((3a + 2)(2a + 3)) + (5a^5 - 4a^4 + 2ab^2 - c + 1)", token_types, rules, "poly_expr")
+result = parseit.parse("((2(1ab + c^3))(2ab^4 + a - 3)) + (2ab + 3a^4 - 2)", token_types, rules, "poly_expr")
 pprint.pprint(result)
 
 
@@ -45,6 +45,7 @@ def color_name(name):
 graph = pydot.Dot(graph_type="digraph")
 
 n = 0
+
 
 def add_nodes(graph, result):
     global n
