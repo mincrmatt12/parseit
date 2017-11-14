@@ -1,10 +1,13 @@
+from __future__ import division
+from builtins import hex
+from past.utils import old_div
 import pydot
 
 
 def color_name(name):
     rgb = hash(name) % 255, (hash(name) >> 4) % 255, (hash(name) >> 8) % 255
     rgb_hex = "#" + "".join(hex(x)[2:] for x in rgb)
-    light = sum(rgb) / 3.0
+    light = old_div(sum(rgb), 3.0)
     return rgb_hex, "#000000" if light > 127 else "#FAFAFA"
 
 

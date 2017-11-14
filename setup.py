@@ -8,5 +8,6 @@ setup(
     license='MIT',
     author='mincrmatt12',
     author_email='matthewmirvish@hotmail.com',
-    description='Simple parser that creates ASTs'
+    description='Simple parser that creates ASTs',
+    install_requires=["future"]
 )

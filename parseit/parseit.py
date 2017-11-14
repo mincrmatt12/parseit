@@ -100,7 +100,7 @@ def parse_rulename(input_str, rulename, rules, tokens, at, token_types):
         for ruletext in full_rule:
             try:
                 return consume_rule(input_str, rulename, ruletext, tokens, at, rules, token_types)
-            except ParseError, e:
+            except ParseError as e:
                 stored_error.append(e)
                 continue
         raise ParseError(str(max(stored_error, key=lambda x: x.at)), at=at)
@@ -113,7 +113,7 @@ def parse_rulename(input_str, rulename, rules, tokens, at, token_types):
             try:
                 at, current_biggest = consume_rule(input_str, rulename, ruletext, tokens, at, rules, token_types)
                 break
-            except ParseError, e:
+            except ParseError as e:
                 stored_error.append(e)
                 continue
         if current_biggest is None:
@@ -126,7 +126,7 @@ def parse_rulename(input_str, rulename, rules, tokens, at, token_types):
                 try:
                     at, current_biggest = consume_rule(input_str, rulename, ruletext, tokens, at, rules, token_types, recurse_start=current_biggest)
                     done = False
-                except ParseError, e:
+                except ParseError as e:
                     continue
         return at, current_biggest
 
