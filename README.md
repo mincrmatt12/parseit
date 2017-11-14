@@ -42,6 +42,11 @@ The tree format of ParseIt is very simple: for rule instances (nodes) you have a
 
 Tokens are represented as a tuple of: the token name, the token content, and its position in the stream
 
+## `treeify`
+
+There is also a module called treeify in the package that (if pydot is installed) allows you to create a graphical representation of
+the generated trees.
+
 ## Example
 
 `example.py` has an example grammar and code to convert the generated tree into a pydot
