@@ -93,13 +93,13 @@ def rule_is_recursive(rulename, ruletexts):
     return any(x[0] == rulename for x in ruletexts)
 
 
-def parse_rulename(input_str, rulename, rules, tokens, at, token_types):
+def parse_rulename(input_str, rulename, rules, tokens, at, token_types, is_start=False):
     if not rule_is_recursive(rulename, rules[rulename]):
         full_rule = rules[rulename]
         stored_error = []
         for ruletext in full_rule:
             try:
-                return consume_rule(input_str, rulename, ruletext, tokens, at, rules, token_types)
+                return consume_rule(input_str, rulename, ruletext, tokens, at, rules, token_types, is_start=is_start)
             except ParseError as e:
                 stored_error.append(e)
                 continue
@@ -111,7 +111,7 @@ def parse_rulename(input_str, rulename, rules, tokens, at, token_types):
         for ruletext in full_rule:
             if ruletext[0] == rulename: continue
             try:
-                at, current_biggest = consume_rule(input_str, rulename, ruletext, tokens, at, rules, token_types)
+                at, current_biggest = consume_rule(input_str, rulename, ruletext, tokens, at, rules, token_types, is_start=is_start)
                 break
             except ParseError as e:
                 stored_error.append(e)
@@ -124,7 +124,7 @@ def parse_rulename(input_str, rulename, rules, tokens, at, token_types):
             done = True
             for ruletext in full_rule:
                 try:
-                    at, current_biggest = consume_rule(input_str, rulename, ruletext, tokens, at, rules, token_types, recurse_start=current_biggest)
+                    at, current_biggest = consume_rule(input_str, rulename, ruletext, tokens, at, rules, token_types, recurse_start=current_biggest, is_start=is_start)
                     done = False
                 except ParseError as e:
                     continue
@@ -147,13 +147,15 @@ def consume_bare_rulesegment(input_str, rulesegment, tokens, at, rules, token_ty
     return at, result
 
 
-def consume_rule(input_str, name, rule, tokens, at, rules, token_types, recurse_start=None):
+def consume_rule(input_str, name, rule, tokens, at, rules, token_types, recurse_start=None, is_start=False):
     childs = []
     if recurse_start is not None:
         childs.append(recurse_start)
     if recurse_start is not None and len(rule) == 1:
         throw_parse_error(input_str, tokens[at][2], '''Parse error: attempted to recursively parse a rule with only 1 
         segment''')
+
+    stored_error = []
 
     for rulesegment in rule[(1 if recurse_start is not None else 0):]:
         if type(rulesegment) is str:
@@ -170,8 +172,8 @@ def consume_rule(input_str, name, rule, tokens, at, rules, token_types, recurse_
                     for it in rulesegment[:-1]:
                         new_at, inst = consume_bare_rulesegment(input_str, it, tokens, new_at, rules, token_types)
                         instances.append(inst)
-                except ParseError:
-                    continue
+                except ParseError as e:
+                    stored_error.append(e)
                 else:
                     at = new_at
                     childs.extend(instances)
@@ -187,62 +189,44 @@ def consume_rule(input_str, name, rule, tokens, at, rules, token_types, recurse_
                         for it in rulesegment[:-1]:
                             new_at, inst = consume_bare_rulesegment(input_str, it, tokens, new_at, rules, token_types)
                             instances.append(inst)
-                    except ParseError:
+                    except ParseError as e:
+                        stored_error.append(e)
                         break
                     else:
                         at = new_at
                         childs.extend(instances)
         else:
-            raise ParseError('''Grammar error: rule {} contains an invalid representation'''.format(name))
+            raise ParseError('''Grammar error: rule {} contains an invalid representation: {}'''.format(name, rulesegment))
 
     inst = rule_instance(name, token_types, childs)
     if len(inst[1]) == 0:
         throw_parse_error(input_str, tokens[at][2], '''Parse error: when parsing a {}, the resulting instance was empty 
         and invalid'''.format(name))
+    if is_start and at != len(tokens) - 1:
+        if len(stored_error) > 0:
+            raise ParseError(str(max(stored_error, key=lambda x: x.at)), at=at)
     return at, inst
 
 
-def parse(input_str, token_types, rules, start="root"):
+def postparse(treenode):
+    if len(treenode[1]) == 1 and treenode[1][0][0].islower():
+            return postparse((treenode[1][0][0], treenode[1][0][1]))
+    else:
+        result = (treenode[0], [])
+        for child in treenode[1]:
+            if child[0].isupper():
+                result[1].append(child)
+            else:
+                result[1].append(postparse(child))
+        return result
+
+
+def parse(input_str, token_types, rules, start="root", postlex=postlex, postparse=postparse):
     tokens = lex(input_str, token_types)
     tokens = postlex(tokens)
     tokens.append(("EOF", "", tokens[-1][2]))
-    at, treenode = parse_rulename(input_str, start, rules, tokens, 0, token_types)
+    at, treenode = parse_rulename(input_str, start, rules, tokens, 0, token_types, is_start=True)
     if at != len(tokens) - 1:
         throw_parse_error(input_str, at, '''Parse error: got to end of token stream without parsing everything''')
-    return treenode
+    return postparse(treenode)
 
-
-if __name__ == "__main__":
-    token_types = {
-        "OP": re.compile("[+-]"),
-        "NUM": re.compile("\d+"),
-        "POWER": re.compile("\^"),
-        "LETTER": re.compile("[a-z]"),
-        "LPAREN": re.compile("\("),
-        "RPAREN": re.compile("\)"),
-        "%WHITE": re.compile("[ \t]+"),
-    }
-    rules = collections.OrderedDict(
-        poly_expr=[
-            ["multi_poly"],
-            ["LPAREN", "multi_poly", "RPAREN", ["OP", "LPAREN", "multi_poly", "RPAREN", "*"]]
-        ],
-        multi_poly=[
-            ["LPAREN", "polynomial", "RPAREN", "LPAREN", "polynomial", "RPAREN"],
-            ["NUM", "LPAREN", "polynomial", "RPAREN"],
-            ["polynomial"]
-        ],
-        polynomial=[
-            ["term", ["OP", "term", "*"]]
-        ],
-        term=[
-            [["NUM", "?"], ["var", "*"]]
-        ],
-        var=[
-            ["LETTER", ["POWER", "NUM", "?"]]
-        ]
-    )
-    result = parse("2(1a^2b - 2ab + 3)", token_types, rules, "poly_expr")
-    import pprint
-
-    pprint.pprint(result)

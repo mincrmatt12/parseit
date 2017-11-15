@@ -1,3 +1,4 @@
 .idea
 *.pyc
-tree.png
+*tree*.png
+*__pycache__*

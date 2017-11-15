@@ -7,9 +7,13 @@ Give it a grammar and tokens, and it'll give you back an ast.
 ## Inputs
 
 Use the `parse()` function to parse text. The `tokens` parameter is a dictionary of token names to compiled regular expressions.
-Prefixing a token with `%` will ignore it. Token names must be uppercase
+Prefixing a token with `%` will ignore it. Token names must be uppercase.
 
 The `rules` parameter is a dictionary of names to lists of rules, and the `start` parameter is what node to start parsing first.
+`postlex` and `postparse` and post-processing functions. The default will:
+
+- after lexing remove all tokens that start with a `%`
+- after parsing flatten all nodes with 1 child
 
 ### Rules
 

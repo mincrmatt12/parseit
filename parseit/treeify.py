@@ -17,11 +17,13 @@ n = 0
 def add_nodes(graph, result):
     global n
     n += 1
-    root_node = pydot.Node("{}{}".format(result[0], n), label=result[0], style="filled", fillcolor=color_name(result[0])[0], fontcolor=color_name(result[0])[1])
+    root_node = pydot.Node("{}{}".format(result[0], n), label=result[0], style="filled",
+                           fillcolor=color_name(result[0])[0], fontcolor=color_name(result[0])[1])
     graph.add_node(root_node)
     for child in result[1]:
         if child[0].isupper():
-            child_node = pydot.Node("TOKEN{}".format(n), label="{}('{}')".format(child[0], child[1]))
+            child_node = pydot.Node("TOKEN{}".format(n), label="{}('{}')".format(child[0], child[1]),
+                                    fillcolor=color_name(child[0])[0], style="filled", fontcolor=color_name(child[0])[1])
             n += 1
             graph.add_node(child_node)
             graph.add_edge(pydot.Edge(root_node, child_node))
@@ -35,6 +37,6 @@ def add_nodes(graph, result):
 def create_pydot_of_tree(result):
     global n
     n = 0
-    graph = pydot.Dot(graph_type="digraph")
+    graph = pydot.Dot(graph_type="digraph", rankdir="LR")
     add_nodes(graph, result)
     return graph
