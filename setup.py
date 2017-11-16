@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name='lrparse',
@@ -9,5 +9,6 @@ setup(
     author='mincrmatt12',
     author_email='matthewmirvish@hotmail.com',
     description='Simple parser that creates ASTs',
-    install_requires=["future"]
+    install_requires=["future"],
+    python_requires=">=2.7"
 )

@@ -3,3 +3,5 @@
 *tree*.png
 *__pycache__*
 dist/
+build/
+lrparse.egg-info/
